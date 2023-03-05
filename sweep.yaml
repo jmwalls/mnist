@@ -1,0 +1,18 @@
+program: train.py
+method: bayes
+metric:
+  name: validation/loss
+  goal: minimize
+parameters:
+  learning_rate:
+    min: 0.0001
+    max: 0.01
+  batch_size:
+    values: [32, 64, 128]
+  fc1_layers:
+    values: [128, 256, 512, 1024]
+  fc2_layers:
+    values: [64, 128, 256]
+  dropout_p:
+    min: 0.1
+    max: 0.6

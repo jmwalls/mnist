@@ -135,7 +135,7 @@ def main():
 
     parser.add_argument("--batch_size", type=int, default=64, help="batch size")
     parser.add_argument(
-        "--epochs", type=int, default=2, help="maximum number of epochs"
+        "--epochs", type=int, default=20, help="maximum number of epochs"
     )
     parser.add_argument("--seed", type=int, default=42, help="global seed")
     parser.add_argument(
@@ -214,6 +214,8 @@ def main():
     logger.watch(lit_model, log_freq=100)
 
     trainer = pl.Trainer(
+        accelerator="auto", # use GPU if available
+        devices=1,          # using max 1 GPU
         max_epochs=wandb.config["epochs"],
         logger=logger,
         callbacks=[checkpoint_callback, summary_callback, prediction_callback],
