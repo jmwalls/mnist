@@ -1,5 +1,6 @@
 """XXX
 """
+import argparse
 import gzip
 from pathlib import Path
 import pickle
@@ -36,12 +37,28 @@ def download_mnist(path: Path, *, force_download: bool = False) -> Path:
 
 
 def main():
+    parser = argparse.ArgumentParser(__doc__)
+    parser.add_argument(
+        "--train-size", type=int, default=None, help="number of training samples"
+    )
+    parser.add_argument(
+        "--val-size", type=int, default=None, help="number of test samples"
+    )
+    args = parser.parse_args()
+
     datadir = Path("data-cache")
     datadir.mkdir(exist_ok=True)
 
     path = download_mnist(datadir)
     with gzip.open(path, "rb") as f:
         ((x_train, y_train), (x_val, y_val), _) = pickle.load(f, encoding="latin-1")
+
+    # Crop data to specified lengths.
+    x_train = x_train[: args.train_size, :]
+    y_train = y_train[: args.train_size]
+
+    x_val = x_val[: args.val_size, :]
+    y_val = y_val[: args.val_size]
 
     run = wandb.init(project="mnist", entity=None, job_type="upload")
     dataset = wandb.Artifact(ARTIFACT, type="dataset")
