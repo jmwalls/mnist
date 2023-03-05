@@ -1,6 +1,7 @@
 # Playing around with MNIST
 
 * Create dataset artifact on WandB
+    * `python artifact.py`
     * Download MNIST data from pytorch github
     * Create WandB artifact
     * Store data in desired format on disk and add to artifact
@@ -12,7 +13,8 @@
         * label
         * wandb.Image
 * Train model
-    * pl.LightningModule
+    * `python train.py`
+    * pl.LightningModule to manage training and validation
     * WandB logging
         * train/val loss
         * train/val accuracy

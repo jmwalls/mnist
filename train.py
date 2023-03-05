@@ -1,4 +1,5 @@
-"""XXX
+"""Train a model to predict the labels of handwritten digits provided by the
+MNIST dataset.
 """
 import argparse
 from pathlib import Path
@@ -140,6 +141,12 @@ def main():
     parser.add_argument(
         "--dataset_alias", type=str, default="latest", help="alias to dataset artifact"
     )
+    parser.add_argument(
+        "--checkpoint",
+        type=Path,
+        default=None,
+        help="Path to existing checkpoint if we wish to resume training",
+    )
 
     LitMnistModel.add_to_argparse(parser)
 
@@ -172,15 +179,7 @@ def main():
     )
     val_loader = DataLoader(val_dataset, shuffle=False, num_workers=2, batch_size=64)
 
-    lit_model = LitMnistModel(
-        learning_rate=wandb.config["learning_rate"],
-        fc1_layers=wandb.config["fc1_layers"],
-        fc2_layers=wandb.config["fc2_layers"],
-        dropout_p=wandb.config["dropout_p"],
-    )
-
     logger = pl.loggers.WandbLogger(log_model="all")
-    logger.watch(lit_model, log_freq=100)
 
     # Save a model checkpoint on validation/loss.
     checkpoint_callback = pl.callbacks.ModelCheckpoint(
@@ -198,12 +197,32 @@ def main():
     # Save predictions.
     prediction_callback = PredictionCallback()
 
+    # Instantiate model--load from checkpoint if we have one.
+    lit_model = LitMnistModel(
+        learning_rate=wandb.config["learning_rate"],
+        fc1_layers=wandb.config["fc1_layers"],
+        fc2_layers=wandb.config["fc2_layers"],
+        dropout_p=wandb.config["dropout_p"],
+    )
+
+    # TODO: should we load an artifact instead of the checkpoint file directly?
+    checkpoint_path = wandb.config["checkpoint"]
+    if checkpoint_path:
+        print(f"loading model from {checkpoint_path}")
+        lit_model = LitMnistModel.load_from_checkpoint(checkpoint_path)
+
+    logger.watch(lit_model, log_freq=100)
+
     trainer = pl.Trainer(
         max_epochs=wandb.config["epochs"],
         logger=logger,
         callbacks=[checkpoint_callback, summary_callback, prediction_callback],
     )
 
+    # Note: we're not passing ckpt_path... model and optimizer state dicts
+    # should already be loaded to the lightning module, but we'll start with
+    # epoch 0. Testing with passing ckpt_path did not appear to start training
+    # at the epoch number where training had left off.
     trainer.fit(
         model=lit_model, train_dataloaders=train_loader, val_dataloaders=val_loader
     )
